@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>尊爵日本旅遊記帳</title>
+    <link rel="icon" href="logo-gold.png" type="image/png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 👑 VIP 配色：深藍金頂部 + 清新白底內容 👑 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 15px; color: #2c3e50; padding-bottom: 50px; }
+        
+        /* 容器改為純白底 */
+        .container { max-width: 450px; margin: 0 auto; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(26, 54, 93, 0.15); overflow: hidden; border: 1px solid #e1e8f0; }
+        
+        /* 🌟 上方不動：頂部儀表板維持深藍漸層與金色 🌟 */
+        .dashboard { background: linear-gradient(135deg, #0f2027 0%, #1A365D 100%); color: white; padding: 25px 20px 25px 20px; text-align: center; position: relative; border-bottom: 4px solid #D4AF37; }
+        
+        .dashboard-header { display: flex; align-items: center; justify-content: flex-start; gap: 15px; margin-bottom: 20px; text-align: left; }
+        .dashboard-header img.logo-crest-gold { height: 60px; width: auto; object-fit: contain; background-color: transparent; }
+        
+        .brand-title { color: #D4AF37; margin: 0; font-size: 22px; letter-spacing: 1.5px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-family: 'Georgia', serif; }
+        .dashboard h3 { margin: 0 0 5px 0; font-size: 13px; color: #a0aec0; letter-spacing: 0.5px; }
+        .dashboard h1 { margin: 0 0 15px 0; font-size: 38px; color: #ffffff; text-shadow: 0 2px 5px rgba(0,0,0,0.4); font-family: 'Georgia', serif; }
+        
+        .dashboard-details { display: flex; justify-content: space-between; font-size: 14px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid rgba(212, 175, 55, 0.2); }
+        
+        .settlement-box { padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; }
+        .settle-owe-me { background-color: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); } 
+        .settle-i-owe { background-color: rgba(231, 76, 60, 0.15); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); } 
+        .settle-clear { background-color: rgba(212, 175, 55, 0.1); color: #D4AF37; border: 1px dashed rgba(212, 175, 55, 0.5); } 
+
+        /* 🌟 下方改為白底質感 🌟 */
+        .toggle-chart-btn { width: 100%; background: #ffffff; color: #1A365D; border: none; border-bottom: 1px solid #edf2f7; padding: 14px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .toggle-chart-btn:hover { background: #f8fafc; color: #D4AF37; }
+        .chart-container { padding: 20px; background: #fafbfc; border-bottom: 1px solid #edf2f7; }
+
+        /* 分頁標籤 (白底) */
+        .tabs { display: flex; background: #ffffff; border-bottom: 1px solid #edf2f7; }
+        .tab-btn { flex: 1; padding: 15px 0; text-align: center; font-weight: bold; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; font-size: 15px; }
+        .tab-btn.active { color: #1A365D; border-bottom: 3px solid #D4AF37; }
+
+        /* 輸入區 (白底深字) */
+        .input-section { padding: 20px; }
+        .input-group { margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .input-group label { flex: 1; font-weight: bold; font-size: 14px; color: #475569; }
+        .input-group input[type="text"], .input-group input[type="number"], .input-group input[type="date"], .input-group select { flex: 2; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; background-color: #f8fafc; width: 100%; box-sizing: border-box; color: #1e293b; transition: 0.2s; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #D4AF37; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15); }
+        
+        .category-wrapper { flex: 2; display: flex; gap: 8px; width: 100%; }
+        .category-wrapper select { flex: 1; width: auto; }
+        .delete-cat-btn { background: #e74c3c; color: white; border: none; border-radius: 8px; padding: 0 12px; cursor: pointer; display: none; font-size: 16px; transition: 0.2s; }
+
+        .split-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; margin-bottom: 15px; }
+        .split-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .split-row:last-child { margin-bottom: 0; }
+        .split-row label { flex: 1; font-size: 14px; color: #475569; }
+        .split-row select { flex: 2; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; background-color: #ffffff; color: #1e293b; }
+
+        .rate-box { background: rgba(212, 175, 55, 0.05); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(212, 175, 55, 0.3); }
+        .instant-preview { font-size: 18px; color: #D4AF37; font-weight: bold; text-align: right; margin-top: 5px; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button.add-btn { flex: 2; padding: 14px; background: #1A365D; color: #D4AF37; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(26, 54, 93, 0.2); transition: 0.2s; letter-spacing: 1px; }
+        button.add-btn:hover { background: #111827; transform: translateY(-1px); }
+        button.cancel-btn { flex: 1; padding: 14px; background-color: #e2e8f0; color: #475569; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; display: none; }
+
+        /* 設定區塊 (白底深字) */
+        .settings-btn { width: 100%; padding: 14px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 12px; border: none; color: white; transition: 0.2s; }
+        .btn-backup { background: #1A365D; box-shadow: 0 4px 10px rgba(26, 54, 93, 0.2); color: #D4AF37; }
+        .btn-restore { background: #f8fafc; border: 1px solid #cbd5e1; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); color: #475569; }
+        .btn-danger { background: #c0392b; box-shadow: 0 4px 10px rgba(192, 57, 43, 0.2); margin-top: 10px; }
+        
+        .title-setting-box { background: #f8fafc; border: 1px solid rgba(212, 175, 55, 0.5); padding: 15px; border-radius: 10px; margin-bottom: 25px; border-left: 4px solid #D4AF37; }
+
+        /* 搜尋列 (白底深字) */
+        .search-bar { width: 100%; padding: 12px 12px 12px 38px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; box-sizing: border-box; margin-bottom: 15px; background: #ffffff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="%231A365D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 12px center; transition: 0.3s; color: #1A365D; }
+        .search-bar:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15); }
+
+        .record-area { padding: 0 20px 20px 20px; }
+        .record-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
+        .record-header h4 { margin: 0; color: #1A365D; }
+        .export-btn { background: #D4AF37; color: #1A365D; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3); }
+
+        /* 每日清單項目 (白底深字) */
+        .date-header { background: #f8fafc; padding: 8px 12px; font-weight: bold; border-radius: 8px; margin-top: 15px; margin-bottom: 10px; color: #1A365D; display: flex; justify-content: space-between; align-items: center; font-size: 14px; border-left: 4px solid #D4AF37; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+        .date-total { color: #D4AF37; font-size: 13px; font-weight: bold; }
+
+        .record-list { list-style: none; padding: 0; margin: 0; }
+        .record-item { background: #ffffff; padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .record-info { display: flex; flex-direction: column; }
+        .record-note { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #1e293b; }
+        
+        .tags-container { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+        .record-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; display: inline-block; font-weight: bold; }
+        .tag-category { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .tag-payer-me { background: #1A365D; color: #D4AF37; border: 1px solid #1A365D; }
+        .tag-payer-friend { background: #64748b; color: white; border: 1px solid #64748b; }
+        .tag-split-shared { background: rgba(212, 175, 55, 0.15); color: #D4AF37; border: 1px solid rgba(212, 175, 55, 0.4); }
+        
+        .record-price { font-weight: bold; font-size: 16px; text-align: right; color: #1A365D; }
+        .record-jpy { font-size: 12px; color: #94a3b8; text-align: right; }
+        .action-btns { display: flex; gap: 8px; margin-left: 12px; }
+        .action-btns span { cursor: pointer; font-size: 16px; padding: 5px; transition: 0.2s; }
+        .action-btns span:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <img src="logo-gold.png" class="logo-crest-gold" alt="Premium Gold Logo">
+            <h2 class="brand-title" id="displayAppTitle">尊爵旅遊記帳</h2>
+        </div>
+        
+        <h3>這趟旅程我的總花費 (含平分)</h3>
+        <h1 id="grandTotal">NT$ 0</h1>
+        <div class="dashboard-details">
+            <div>行前 (台幣)<br><strong id="preTotal">NT$ 0</strong></div>
+            <div>當地 (換算)<br><strong id="localTotal">NT$ 0</strong></div>
+        </div>
+        <div id="settlementBox" class="settlement-box settle-clear">
+            🤝 目前帳務結清
+        </div>
+    </div>
+
+    <button class="toggle-chart-btn" onclick="toggleChart()">📊 顯示 / 隱藏我的花費分析</button>
+    <div id="chartContainer" class="chart-container" style="display: none;">
+        <canvas id="expenseChart"></canvas>
+    </div>
+
+    <div class="tabs">
+        <div class="tab-btn active" id="tabPre" onclick="switchTab('pre')">🛫 行前</div>
+        <div class="tab-btn" id="tabLocal" onclick="switchTab('local')">🛍️ 當地</div>
+        <div class="tab-btn" id="tabSettings" onclick="switchTab('settings')">⚙️ 設定</div>
+    </div>
+
+    <div class="input-section" id="formSection">
+        <div class="input-group">
+            <label>日期</label>
+            <input type="date" id="expenseDate">
+        </div>
+        
+        <div class="input-group">
+            <label>分類</label>
+            <div class="category-wrapper">
+                <select id="expenseCategory" onchange="checkCustomCategory()"></select>
+                <button type="button" id="deleteCategoryBtn" class="delete-cat-btn" onclick="deleteCustomCategory()" title="刪除此自訂分類">🗑️</button>
+            </div>
+        </div>
+
+        <div class="input-group" id="customCategoryGroup" style="display: none;">
+            <label style="color: #1A365D;">輸入新分類</label>
+            <input type="text" id="customCategoryInput" placeholder="例如：💇‍♀️ 紓壓按摩">
+        </div>
+
+        <div class="input-group">
+            <label>花費項目</label>
+            <input type="text" id="expenseNote" placeholder="例如：機票、一蘭拉麵...">
+        </div>
+
+        <div class="split-box">
+            <div class="split-row">
+                <label>付款人是誰？</label>
+                <select id="expensePayer">
+                    <option value="me">🙋‍♂️ 我付的</option>
+                    <option value="friend">👯‍♂️ 朋友付的</option>
+                </select>
+            </div>
+            <div class="split-row">
+                <label>這筆錢算誰的？</label>
+                <select id="expenseSplit">
+                    <option value="shared">🤝 兩人平分 (各 50%)</option>
+                    <option value="me">🙋‍♂️ 算我自己的</option>
+                    <option value="friend">👯‍♂️ 算朋友的 (代墊)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="rate-box" id="rateSection" style="display: none;">
+            <div class="input-group" style="margin-bottom: 0;">
+                <label>目前匯率</label>
+                <input type="number" id="exchangeRate" value="0.21" step="0.001" oninput="calculatePreview()">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label id="amountLabel">總金額 (NT$)</label>
+            <input type="number" id="expenseAmount" placeholder="0" oninput="calculatePreview()">
+        </div>
+
+        <div class="instant-preview" id="twdPreview" style="display: none;">= 約 NT$ 0</div>
+
+        <div class="btn-group">
+            <button class="add-btn" id="submitBtn" onclick="saveExpense()">新增紀錄</button>
+            <button class="cancel-btn" id="cancelBtn" onclick="cancelEdit()">取消</button>
+        </div>
+    </div>
+
+    <div class="input-section" id="settingsSection" style="display: none;">
+        
+        <div class="title-setting-box">
+            <h4 style="margin-top:0; color: #1A365D; margin-bottom: 10px;">👑 客製化 App 標題</h4>
+            <div class="input-group" style="margin-bottom: 0;">
+                <input type="text" id="settingAppTitle" placeholder="例如：Denny 的日本記帳" oninput="updateAppTitle()">
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-top: 8px; margin-bottom: 0;">輸入文字後，首頁上方標題會自動更新並記憶。</p>
+        </div>
+
+        <h4 style="margin-top:0; color: #1A365D;">🛡️ 資料安全與備份</h4>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">建議每天備份一次。更換設備時，可直接匯入備份檔還原所有記帳資料。</p>
+        
+        <button class="settings-btn btn-backup" onclick="exportBackup()">💾 下載完整備份檔 (.json)</button>
+        
+        <div style="position: relative; overflow: hidden; display: inline-block; width: 100%;">
+            <button class="settings-btn btn-restore">📂 從備份檔還原 (會覆蓋現有資料)</button>
+            <input type="file" id="importFile" accept=".json" onchange="importBackup(event)" style="position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height: 100%; width: 100%;">
+        </div>
+
+        <hr style="border:0; border-top:1px dashed #cbd5e1; margin: 25px 0 20px 0;">
+        
+        <h4 style="margin-top:0; color: #c0392b;">🚨 危險區域</h4>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">旅程結束後，可清空所有明細與自訂分類，準備迎接下一趟旅行。</p>
+        <button class="settings-btn btn-danger" onclick="clearAllData()">🗑️ 清空所有資料 (重新開始)</button>
+    </div>
+
+    <div class="record-area">
+        <div class="record-header">
+            <h4>每日明細</h4>
+            <button class="export-btn" onclick="exportToCSV()">📥 匯出 Excel</button>
+        </div>
+        
+        <input type="text" id="searchInput" class="search-bar" placeholder="搜尋花費項目或分類名稱..." oninput="updateUI()">
+        
+        <div id="recordListContainer"></div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'pre';
+    let expenses = JSON.parse(localStorage.getItem('travelExpenses')) || [];
+    let customCategories = JSON.parse(localStorage.getItem('travelCustomCategories')) || [];
+    let editingId = null;
+    let myPieChart = null; 
+
+    const defaultCategories = ["🍽️ 伙食", "👗 衣服/購物", "🏠 住宿", "🚌 交通", "🎟️ 娛樂/門票", "🏥 醫療/保險", "📦 其他"];
+
+    window.onload = function() {
+        loadAppTitle(); 
+        document.getElementById('expenseDate').valueAsDate = new Date();
+        renderCategoryDropdown(); 
+        switchTab('pre'); 
+        updateUI();
+    };
+
+    function loadAppTitle() {
+        const savedTitle = localStorage.getItem('travelAppTitle') || "尊爵旅遊記帳";
+        document.getElementById('displayAppTitle').innerText = savedTitle;
+        document.getElementById('settingAppTitle').value = savedTitle;
+    }
+
+    function updateAppTitle() {
+        const newTitle = document.getElementById('settingAppTitle').value.trim() || "尊爵旅遊記帳";
+        document.getElementById('displayAppTitle').innerText = newTitle;
+        localStorage.setItem('travelAppTitle', newTitle);
+    }
+
+    function renderCategoryDropdown() {
+        const selectEl = document.getElementById('expenseCategory');
+        const currentVal = selectEl.value; 
+        
+        selectEl.innerHTML = ''; 
+        defaultCategories.forEach(cat => selectEl.add(new Option(cat, cat)));
+        customCategories.forEach(cat => selectEl.add(new Option(cat, cat)));
+        selectEl.add(new Option("➕ 自訂分類...", "custom"));
+
+        if (currentVal && Array.from(selectEl.options).some(o => o.value === currentVal)) {
+            selectEl.value = currentVal;
+        }
+        checkCustomCategory(); 
+    }
+
+    function deleteCustomCategory() {
+        const cat = document.getElementById('expenseCategory').value;
+        if (customCategories.includes(cat)) {
+            if (confirm(`確定要從清單中移除「${cat}」這個分類嗎？`)) {
+                customCategories = customCategories.filter(c => c !== cat);
+                localStorage.setItem('travelCustomCategories', JSON.stringify(customCategories));
+                document.getElementById('expenseCategory').value = defaultCategories[0];
+                renderCategoryDropdown();
+            }
+        }
+    }
+
+    function checkCustomCategory() {
+        const cat = document.getElementById('expenseCategory').value;
+        document.getElementById('customCategoryGroup').style.display = (cat === 'custom') ? 'flex' : 'none';
+        document.getElementById('deleteCategoryBtn').style.display = customCategories.includes(cat) ? 'block' : 'none';
+    }
+
+    function toggleChart() {
+        const container = document.getElementById('chartContainer');
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            renderChart(); 
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    function renderChart() {
+        if (document.getElementById('chartContainer').style.display === 'none') return;
+
+        const categoryData = {};
+        expenses.forEach(e => {
+            const split = e.split || (e.isProxy ? 'friend' : 'me');
+            let myShare = 0;
+            if (split === 'me') myShare = e.twd;
+            else if (split === 'shared') myShare = e.twd / 2;
+            
+            if (myShare > 0) {
+                categoryData[e.category] = (categoryData[e.category] || 0) + myShare;
+            }
+        });
+
+        const labels = Object.keys(categoryData);
+        const data = Object.values(categoryData);
+        if (labels.length === 0) { labels.push("尚無花費"); data.push(1); }
+
+        /* 👑 圖表改回適合白底的高級配色 👑 */
+        const colors = ['#1A365D', '#D4AF37', '#2980b9', '#C0A062', '#34495e', '#F1C40F', '#7f8c8d', '#e74c3c'];
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+        if (myPieChart) myPieChart.destroy();
+
+        myPieChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: data[0] === 1 && labels[0] === "尚無花費" ? ['#e2e8f0'] : colors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                if (context.label === "尚無花費") return " 快去記帳吧！";
+                                return ` NT$ ${Math.round(context.raw).toLocaleString()}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function switchTab(tab) {
+        if(editingId && tab !== currentTab) return; 
+        currentTab = tab;
+        
+        document.getElementById('tabPre').className = tab === 'pre' ? 'tab-btn active' : 'tab-btn';
+        document.getElementById('tabLocal').className = tab === 'local' ? 'tab-btn active' : 'tab-btn';
+        document.getElementById('tabSettings').className = tab === 'settings' ? 'tab-btn active' : 'tab-btn';
+        
+        const formSec = document.getElementById('formSection');
+        const setSec = document.getElementById('settingsSection');
+        const rateSection = document.getElementById('rateSection');
+        const twdPreview = document.getElementById('twdPreview');
+        const amountLabel = document.getElementById('amountLabel');
+
+        if (tab === 'settings') {
+            formSec.style.display = 'none';
+            setSec.style.display = 'block';
+        } else {
+            formSec.style.display = 'block';
+            setSec.style.display = 'none';
+
+            if (tab === 'pre') {
+                rateSection.style.display = 'none';
+                twdPreview.style.display = 'none';
+                amountLabel.innerText = '總金額 (NT$)';
+                if(!editingId) {
+                    document.getElementById('expenseCategory').value = '🏠 住宿'; 
+                    document.getElementById('expenseSplit').value = 'shared'; 
+                }
+            } else if (tab === 'local') {
+                rateSection.style.display = 'block';
+                twdPreview.style.display = 'block';
+                amountLabel.innerText = '日幣總金額 (¥)';
+                if(!editingId) {
+                    document.getElementById('expenseCategory').value = '🍽️ 伙食';
+                    document.getElementById('expenseSplit').value = 'shared'; 
+                    twdPreview.innerText = '= 約 NT$ 0';
+                }
+            }
+            if(!editingId) document.getElementById('expenseAmount').value = '';
+            checkCustomCategory(); 
+        }
+    }
+
+    function calculatePreview() {
+        if (currentTab !== 'local') return;
+        const rate = parseFloat(document.getElementById('exchangeRate').value);
+        const jpy = parseFloat(document.getElementById('expenseAmount').value);
+        const previewEl = document.getElementById('twdPreview');
+        if (!isNaN(jpy) && !isNaN(rate)) {
+            previewEl.innerText = `= 約 NT$ ${Math.round(jpy * rate)}`;
+        } else {
+            previewEl.innerText = `= 約 NT$ 0`;
+        }
+    }
+
+    function editExpense(id) {
+        const record = expenses.find(e => e.id === id);
+        if(!record) return;
+
+        editingId = id;
+        switchTab(record.type); 
+        
+        if (record.type === 'pre') {
+            document.getElementById('expenseAmount').value = record.twd;
+        } else {
+            document.getElementById('exchangeRate').value = record.rate;
+            document.getElementById('expenseAmount').value = record.jpy;
+            calculatePreview();
+        }
+
+        document.getElementById('expenseDate').value = record.date;
+        document.getElementById('expenseNote').value = record.note;
+        document.getElementById('expensePayer').value = record.payer || 'me';
+        document.getElementById('expenseSplit').value = record.split || (record.isProxy ? 'friend' : 'me');
+
+        if (defaultCategories.includes(record.category) || customCategories.includes(record.category)) {
+            document.getElementById('expenseCategory').value = record.category;
+        } else {
+            document.getElementById('expenseCategory').value = 'custom';
+            document.getElementById('customCategoryInput').value = record.category;
+        }
+        checkCustomCategory(); 
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = '💾 儲存修改';
+        submitBtn.style.background = '#f1f5f9';
+        submitBtn.style.color = '#1A365D';
+        submitBtn.style.border = '2px solid #D4AF37';
+        document.getElementById('cancelBtn').style.display = 'block';
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        editingId = null;
+        document.getElementById('expenseNote').value = '';
+        document.getElementById('expenseAmount').value = '';
+        document.getElementById('customCategoryInput').value = ''; 
+        document.getElementById('expensePayer').value = 'me'; 
+        document.getElementById('expenseSplit').value = 'shared'; 
+        document.getElementById('expenseDate').valueAsDate = new Date();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = '新增紀錄';
+        submitBtn.style.background = '#1A365D';
+        submitBtn.style.color = '#D4AF37';
+        submitBtn.style.border = 'none';
+        document.getElementById('cancelBtn').style.display = 'none';
+        
+        switchTab(currentTab);
+    }
+
+    function saveExpense() {
+        const date = document.getElementById('expenseDate').value;
+        let category = document.getElementById('expenseCategory').value;
+        
+        if (category === 'custom') {
+            category = document.getElementById('customCategoryInput').value.trim();
+            if (!category) { alert("請輸入自訂分類名稱！"); return; }
+            if (!defaultCategories.includes(category) && !customCategories.includes(category)) {
+                customCategories.push(category);
+                localStorage.setItem('travelCustomCategories', JSON.stringify(customCategories));
+                renderCategoryDropdown(); 
+                document.getElementById('expenseCategory').value = category; 
+                checkCustomCategory();
+            }
+        }
+
+        const note = document.getElementById('expenseNote').value || category; 
+        const amountInput = parseFloat(document.getElementById('expenseAmount').value);
+        const rate = parseFloat(document.getElementById('exchangeRate').value);
+        const payer = document.getElementById('expensePayer').value; 
+        const split = document.getElementById('expenseSplit').value; 
+
+        if (!date) { alert("請選擇日期！"); return; }
+        if (isNaN(amountInput) || amountInput <= 0) { alert("請輸入有效的金額！"); return; }
+
+        let twdAmount = currentTab === 'pre' ? Math.round(amountInput) : Math.round(amountInput * rate);
+        let jpyAmount = currentTab === 'pre' ? 0 : amountInput;
+
+        const newRecord = {
+            id: editingId ? editingId : Date.now(),
+            date: date,
+            category: category,
+            type: currentTab,
+            note: note,
+            twd: twdAmount,
+            jpy: jpyAmount,
+            rate: rate,
+            payer: payer,
+            split: split
+        };
+
+        if (editingId) {
+            const index = expenses.findIndex(e => e.id === editingId);
+            expenses[index] = newRecord;
+        } else {
+            expenses.push(newRecord);
+        }
+
+        localStorage.setItem('travelExpenses', JSON.stringify(expenses));
+        cancelEdit(); 
+        updateUI();
+    }
+
+    function deleteExpense(id) {
+        if(confirm('確定要刪除這筆紀錄嗎？')) {
+            expenses = expenses.filter(expense => expense.id !== id);
+            localStorage.setItem('travelExpenses', JSON.stringify(expenses));
+            updateUI();
+            if(editingId === id) cancelEdit(); 
+        }
+    }
+
+    // 備份與還原
+    function exportBackup() {
+        if(expenses.length === 0 && customCategories.length === 0) {
+            alert("目前沒有任何資料可以備份喔！"); return;
+        }
+        const appTitle = document.getElementById('displayAppTitle').innerText;
+        const backupData = { version: "2.0", expenses: expenses, customCategories: customCategories };
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${appTitle}_備份檔_${new Date().toISOString().slice(0,10)}.json`;
+        link.click();
+    }
+
+    function importBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const parsed = JSON.parse(e.target.result);
+                if (Array.isArray(parsed)) expenses = parsed;
+                else if (parsed.expenses) {
+                    expenses = parsed.expenses;
+                    if (parsed.customCategories) customCategories = parsed.customCategories;
+                }
+                localStorage.setItem('travelExpenses', JSON.stringify(expenses));
+                localStorage.setItem('travelCustomCategories', JSON.stringify(customCategories));
+                
+                renderCategoryDropdown();
+                updateUI();
+                alert("✅ 備份資料還原成功！所有帳務已更新。");
+            } catch(err) {
+                alert("❌ 檔案格式錯誤，無法還原！請確定選擇的是之前下載的 .json 備份檔。");
+            }
+            document.getElementById('importFile').value = ''; 
+        };
+        reader.readAsText(file);
+    }
+
+    function clearAllData() {
+        if(expenses.length === 0 && customCategories.length === 0) {
+            alert("目前已經沒有任何資料囉！"); return;
+        }
+        if(confirm("🚨 警告：這將會徹底刪除「所有記帳紀錄」與「自訂分類」！\n確定要全部清空嗎？")) {
+            if(confirm("最後確認：資料刪除後無法復原，您確定要重新開始嗎？")) {
+                expenses = []; customCategories = [];
+                localStorage.removeItem('travelExpenses');
+                localStorage.removeItem('travelCustomCategories');
+                renderCategoryDropdown(); updateUI();
+                alert("🗑️ 所有資料已清空乾淨，祝您下一趟旅途愉快！");
+                switchTab('pre');
+            }
+        }
+    }
+
+    function exportToCSV() {
+        if(expenses.length === 0) { alert("目前沒有環境任何紀錄可以匯出喔！"); return; }
+        const appTitle = document.getElementById('displayAppTitle').innerText;
+        let csvContent = "\uFEFF日期,類型,分類,項目備註,付款人,分帳方式,日幣(¥),匯率,台幣(NT$)\n";
+        let sortedExpenses = [...expenses].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        sortedExpenses.forEach(record => {
+            let typeName = record.type === 'pre' ? '行前準備' : '当地花費';
+            let payerTxt = record.payer === 'friend' ? '朋友付' : '我付';
+            let splitVal = record.split || (record.isProxy ? 'friend' : 'me');
+            let splitTxt = splitVal === 'shared' ? '兩人平分' : (splitVal === 'me' ? '算我的' : '算朋友的');
+            let safeNote = `"${record.note.replace(/"/g, '""')}"`;
+            csvContent += `${record.date},${typeName},${record.category},${safeNote},${record.jpy},${record.rate},${record.twd}\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${appTitle}_明細_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+    }
+
+    function updateUI() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        let myTotalExpense = 0, myTotalPaid = 0, preTotal = 0, localTotal = 0;
+
+        expenses.forEach(record => {
+            const payer = record.payer || 'me';
+            const split = record.split || (record.isProxy ? 'friend' : 'me');
+            if (payer === 'me') myTotalPaid += record.twd;
+
+            let myShare = 0;
+            if (split === 'me') myShare = record.twd;
+            else if (split === 'shared') myShare = record.twd / 2;
+
+            myTotalExpense += myShare;
+            if (record.type === 'pre') preTotal += myShare;
+            else localTotal += myShare;
+        });
+
+        let filteredExpenses = expenses.filter(e => {
+            if (!searchTerm) return true;
+            return e.note.toLowerCase().includes(searchTerm) || e.category.toLowerCase().includes(searchTerm);
+        });
+
+        filteredExpenses.sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
+
+        const containerEl = document.getElementById('recordListContainer');
+        containerEl.innerHTML = '';
+
+        if (filteredExpenses.length === 0) {
+            containerEl.innerHTML = '<div style="text-align:center; padding: 20px; color: #a0aec0;">沒有找到符合的紀錄</div>';
+        }
+
+        let currentGroupDate = null, currentListEl = null;
+
+        filteredExpenses.forEach(record => {
+            if (record.date !== currentGroupDate) {
+                currentGroupDate = record.date;
+                const dailyTotal = filteredExpenses.filter(e => e.date === currentGroupDate).reduce((sum, e) => {
+                    let s = e.split || (e.isProxy ? 'friend' : 'me');
+                    if(s === 'me') return sum + e.twd;
+                    if(s === 'shared') return sum + (e.twd / 2);
+                    return sum;
+                }, 0);
+
+                const dateHeader = document.createElement('div');
+                dateHeader.className = 'date-header';
+                dateHeader.innerHTML = `<span>📅 ${record.date}</span> <span class="date-total">我的花費: NT$ ${Math.round(dailyTotal).toLocaleString()}</span>`;
+                containerEl.appendChild(dateHeader);
+
+                currentListEl = document.createElement('ul');
+                currentListEl.className = 'record-list';
+                containerEl.appendChild(currentListEl);
+            }
+
+            const payer = record.payer || 'me';
+            const split = record.split || (record.isProxy ? 'friend' : 'me');
+
+            const li = document.createElement('li');
+            li.className = 'record-item';
+            
+            let typeTag = record.type === 'pre' ? '<span class="record-tag tag-pre">🛫 行前</span>' : '<span class="record-tag tag-local">🛍️ 當地</span>';
+            let payerTag = payer === 'me' ? '<span class="record-tag tag-payer-me">🙋‍♂️ 我付</span>' : '<span class="record-tag tag-payer-friend">👯‍♂️ 友付</span>';
+            let splitTag = '';
+            if (split === 'shared') splitTag = '<span class="record-tag tag-split-shared">🤝 平分</span>';
+            else if (split === 'me') splitTag = '<span class="record-tag tag-category">🙋‍♂️ 算我的</span>';
+            else splitTag = '<span class="record-tag tag-category" style="background:#e74c3c; color:white; border:none;">👯‍♂️ 算友的</span>';
+            
+            let priceHTML = record.type === 'pre' 
+                ? `<div class="record-price">NT$ ${record.twd}</div>`
+                : `<div class="record-price">NT$ ${record.twd}</div><div class="record-jpy">¥${record.jpy}</div>`;
+
+            li.innerHTML = `
+                <div class="record-info">
+                    <span class="record-note">${record.note}</span>
+                    <div class="tags-container">
+                        ${typeTag} ${payerTag} ${splitTag}
+                    </div>
+                </div>
+                <div style="text-align: right; display: flex; align-items: center;">
+                    <div>${priceHTML}</div>
+                    <div class="action-btns">
+                        <span onclick="editExpense(${record.id})" title="修改">✏️</span>
+                        <span class="delete-btn" onclick="deleteExpense(${record.id})" title="刪除">🗑️</span>
+                    </div>
+                </div>
+            `;
+            currentListEl.appendChild(li);
+        });
+
+        const balance = myTotalPaid - myTotalExpense;
+        const settleBox = document.getElementById('settlementBox');
+        
+        if (balance > 0) {
+            settleBox.className = 'settlement-box settle-owe-me';
+            settleBox.innerHTML = `💰 朋友需給你：NT$ ${Math.round(balance).toLocaleString()}`;
+        } else if (balance < 0) {
+            settleBox.className = 'settlement-box settle-i-owe';
+            settleBox.innerHTML = `💸 你需給朋友：NT$ ${Math.round(Math.abs(balance)).toLocaleString()}`;
+        } else {
+            settleBox.className = 'settlement-box settle-clear';
+            settleBox.innerHTML = `🤝 目前帳務結清`;
+        }
+
+        document.getElementById('preTotal').innerText = `NT$ ${Math.round(preTotal).toLocaleString()}`;
+        document.getElementById('localTotal').innerText = `NT$ ${Math.round(localTotal).toLocaleString()}`;
+        document.getElementById('grandTotal').innerText = `NT$ ${Math.round(myTotalExpense).toLocaleString()}`;
+
+        renderChart();
+    }
+</script>
+
+</body>
+</html>
