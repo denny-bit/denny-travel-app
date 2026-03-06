@@ -81,6 +81,11 @@
         .record-area { padding: 0 20px 20px 20px; }
         .record-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
         .record-header h4 { margin: 0; color: #1A365D; }
+        
+        /* 🔽 新增的排序下拉選單樣式 🔽 */
+        .sort-select { padding: 6px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: bold; color: #1A365D; background-color: #f8fafc; cursor: pointer; outline: none; transition: 0.2s; }
+        .sort-select:focus { border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15); }
+
         .export-btn { background: #D4AF37; color: #1A365D; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3); }
 
         /* 每日清單項目 (白底深字) */
@@ -229,7 +234,13 @@
     <div class="record-area">
         <div class="record-header">
             <h4>每日明細</h4>
-            <button class="export-btn" onclick="exportToCSV()">📥 匯出 Excel</button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <select id="sortOrder" class="sort-select" onchange="updateUI()">
+                    <option value="desc">從新到舊 ⬇️</option>
+                    <option value="asc">從舊到新 ⬆️</option>
+                </select>
+                <button class="export-btn" onclick="exportToCSV()">📥 匯出</button>
+            </div>
         </div>
         
         <input type="text" id="searchInput" class="search-bar" placeholder="搜尋花費項目或分類名稱..." oninput="updateUI()">
@@ -329,7 +340,6 @@
         const data = Object.values(categoryData);
         if (labels.length === 0) { labels.push("尚無花費"); data.push(1); }
 
-        /* 👑 圖表改回適合白底的高級配色 👑 */
         const colors = ['#1A365D', '#D4AF37', '#2980b9', '#C0A062', '#34495e', '#F1C40F', '#7f8c8d', '#e74c3c'];
         const ctx = document.getElementById('expenseChart').getContext('2d');
         if (myPieChart) myPieChart.destroy();
@@ -537,7 +547,6 @@
         }
     }
 
-    // 備份與還原
     function exportBackup() {
         if(expenses.length === 0 && customCategories.length === 0) {
             alert("目前沒有任何資料可以備份喔！"); return;
@@ -598,6 +607,8 @@
         if(expenses.length === 0) { alert("目前沒有環境任何紀錄可以匯出喔！"); return; }
         const appTitle = document.getElementById('displayAppTitle').innerText;
         let csvContent = "\uFEFF日期,類型,分類,項目備註,付款人,分帳方式,日幣(¥),匯率,台幣(NT$)\n";
+        
+        // 匯出時固定照時間舊到新排序
         let sortedExpenses = [...expenses].sort((a, b) => new Date(a.date) - new Date(b.date));
 
         sortedExpenses.forEach(record => {
@@ -606,7 +617,7 @@
             let splitVal = record.split || (record.isProxy ? 'friend' : 'me');
             let splitTxt = splitVal === 'shared' ? '兩人平分' : (splitVal === 'me' ? '算我的' : '算朋友的');
             let safeNote = `"${record.note.replace(/"/g, '""')}"`;
-            csvContent += `${record.date},${typeName},${record.category},${safeNote},${record.jpy},${record.rate},${record.twd}\n`;
+            csvContent += `${record.date},${typeName},${record.category},${safeNote},${payerTxt},${splitTxt},${record.jpy},${record.rate},${record.twd}\n`;
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -618,6 +629,7 @@
 
     function updateUI() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        const sortOrder = document.getElementById('sortOrder') ? document.getElementById('sortOrder').value : 'desc';
         let myTotalExpense = 0, myTotalPaid = 0, preTotal = 0, localTotal = 0;
 
         expenses.forEach(record => {
@@ -639,7 +651,16 @@
             return e.note.toLowerCase().includes(searchTerm) || e.category.toLowerCase().includes(searchTerm);
         });
 
-        filteredExpenses.sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
+        // 🔽 動態依照選單排序 (從新到舊 或 從舊到新) 🔽
+        filteredExpenses.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            if (sortOrder === 'asc') {
+                return dateA - dateB || a.id - b.id; // 舊到新
+            } else {
+                return dateB - dateA || b.id - a.id; // 新到舊
+            }
+        });
 
         const containerEl = document.getElementById('recordListContainer');
         containerEl.innerHTML = '';
@@ -729,4 +750,3 @@
 
 </body>
 </html>
-
